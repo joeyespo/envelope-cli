@@ -1,0 +1,23 @@
+{
+  "name": "envelope-cli",
+  "version": "0.1.0",
+  "description": "Thin server support to simplify single-page applications.",
+  "author": "Joe Esposito <joe@joeyespo.com>",
+  "main": "index.js",
+  "license": "MIT",
+  "bin": {
+    "envelope": "bin/envelope.js"
+  },
+  "repository": "joeyespo/envelope-cli",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "babel-eslint": "~7.1.1",
+    "babel-preset-env": "~1.2.1",
+    "babel-register": "~6.23.0",
+    "eslint": "~3.17.1",
+    "js-yaml": "^3.10.0",
+    "semver": "^5.5.0"
+  }
+}
