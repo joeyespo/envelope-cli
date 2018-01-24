@@ -1,8 +1,20 @@
+import { docopt } from 'docopt';
+import { version } from '../../package.json';
 import { callSync } from '../utils';
-import { ENVELOPE_FILENAME } from '../format';
+import { ENVELOPE_FILENAME, loadConfig } from '../format';
 
-export default function release(config, args, env = process.env) {
-  const { release } = config;
+// TODO: Add more documentation to USAGE
+
+export const USAGE = `
+Usage: envelope release
+
+  Builds the client, runs the serve command, and exposs them behind a production server.
+`.trim();
+
+export default function release(argv = process.argv, env = process.env) {
+  docopt(USAGE, { argv: ['release', ...argv], version });
+
+  const { release } = loadConfig();
 
   if (!release) {
     throw new Error(`Missing "release" field in ${ENVELOPE_FILENAME}`);
@@ -20,7 +32,7 @@ export default function release(config, args, env = process.env) {
     }
     // TODO: exec/execFile on non-Windows systems
     // https://nodejs.org/api/child_process.html#child_process_spawning_bat_and_cmd_files_on_windows
-    const command = [serve, ...args].join(' ');
+    const command = [serve, ...argv].join(' ');
     console.log('serve:', command);
     return callSync(command, { ...env, ...subenv });
   }

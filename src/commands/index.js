@@ -1,62 +1,62 @@
+import { docopt } from 'docopt';
+import { version } from '../../package.json';
 import build from './build';
 import develop from './develop';
 import release from './release';
 import start from './start';
-import { readFileSync } from 'fs';
-import { safeLoad } from 'js-yaml';
-import { version } from '../../package.json';
-import { ENVELOPE_FILENAME, normalize } from '../format';
+
+export const USAGE = `
+Usage: envelope <command> [<args>...]
+
+Options:
+  -h, --help      Show usage information
+  -v, --version   Show version number
+
+Commands:
+  start           Runs either 'develop' or 'release' depending on NODE_ENV
+  develop         Runs the client and server commands and exposes them behind a reverse proxy
+  release         Builds the client, runs the serve command, and exposs them behind a production server
+  build           Builds the client (without running any servers)
+
+Run \`envelope help COMMAND\` for more information on a specific command.
+`.trim();
 
 export const COMMANDS = { start, develop, release, build };
-export const USAGE = [
-  'Usage: envelope [command] [options]',
-  '',
-  'Commands:',
-  `  ${Object.keys(COMMANDS).join('\n  ')}`,
-].join('\n');
 
-function showUsage(config, args, env = process.env) {
-  console.log();
-  console.log(USAGE);
-}
+function cli(argv = process.argv, env = process.env) {
+  const { '<command>': command, '<args>': args } = docopt(USAGE, { argv: argv.slice(2), version });
 
-function run(command, config, args, env = process.env) {
-  if (!COMMANDS[command]) {
-    throw new Error(`Command "${command}" not found`);
-  }
-  return COMMANDS[command](config, args, env);
-}
-
-export function main(argv = process.argv, env = process.env) {
-  console.log(`envelope: ${version}`);
-
-  // Load envelope config
-  let doc;
-  try {
-    doc = safeLoad(readFileSync(ENVELOPE_FILENAME, 'utf8'));
-  } catch (ex) {
-    if (ex.code !== 'ENOENT') {
-      throw ex;
+  // Show command help
+  if (command === 'help') {
+    const topic = args[0];
+    if (Object.keys(COMMANDS).includes(topic)) {
+      return COMMANDS[topic]([...args.slice(1), '--help']);
     }
-    console.log(`No ${ENVELOPE_FILENAME} found`);
+    console.log(USAGE);
     return 0;
   }
 
-  // Normalize and validate config
-  const config = normalize(doc || {});
+  // Validate command
+  if (!Object.keys(COMMANDS).includes(command)) {
+    throw new Error(`Command "${command}" not found`);
+  }
 
   // TODO: Load .env file
 
-  // Show usage
-  if (argv.length <3) {
-    showUsage();
+  // Run command
+  console.log(`envelope ${command} v${version}`);
+  return COMMANDS[command](args, env);
+}
+
+export function main(argv = process.argv, env = process.env) {
+  // Show full usage by default
+  if (argv.length <= 2) {
+    console.log(USAGE);
     return 0;
   }
 
-  // Run command
-  const [command, ...args] = argv.length > 2 ? argv.slice(2) : [];
-  try{
-    return run(command, config, args, env);
+  try {
+    return cli(argv, env);
   } catch (ex) {
     console.error(env.DEBUG_ENVELOPE ? ex : String(ex));
     return 1;

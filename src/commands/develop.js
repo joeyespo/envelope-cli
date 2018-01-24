@@ -1,8 +1,20 @@
+import { docopt } from 'docopt';
+import { version } from '../../package.json';
 import { callSync } from '../utils';
-import { ENVELOPE_FILENAME } from '../format';
+import { ENVELOPE_FILENAME, loadConfig } from '../format';
 
-export default function develop(config, args, env = process.env) {
-  const { develop } = config || {};
+// TODO: Add more documentation to USAGE
+
+export const USAGE = `
+Usage: envelope develop
+
+  Runs the client and server commands and exposes them behind a reverse proxy.
+`.trim();
+
+export default function develop(argv = process.argv, env = process.env) {
+  docopt(USAGE, { argv: ['develop', ...argv], version });
+
+  const { develop } = loadConfig();
 
   if (!develop) {
     throw new Error(`Missing "develop" field in ${ENVELOPE_FILENAME}`);
@@ -20,7 +32,7 @@ export default function develop(config, args, env = process.env) {
     }
     // TODO: exec/execFile on non-Windows systems
     // https://nodejs.org/api/child_process.html#child_process_spawning_bat_and_cmd_files_on_windows
-    const command = [server, ...args].join(' ');
+    const command = [server, ...argv].join(' ');
     console.log('server:', command);
     return callSync(command, { ...env, ...subenv });
   }
