@@ -1,5 +1,5 @@
 import { callSync } from '../utils';
-import { ENVELOPE_FILENAME } from '../validation';
+import { ENVELOPE_FILENAME } from '../format';
 
 export default function develop(config, args, env = process.env) {
   const { develop } = config || {};

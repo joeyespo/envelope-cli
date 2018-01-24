@@ -1,5 +1,5 @@
 import { callSync } from '../utils';
-import { ENVELOPE_FILENAME } from '../validation';
+import { ENVELOPE_FILENAME } from '../format';
 
 export default function release(config, args, env = process.env) {
   const { release } = config;

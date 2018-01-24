@@ -1,9 +1,7 @@
 import { coerce, satisfies } from 'semver';
+import { ENVELOPE_FILENAME, SUPPORTED_VERSIONS } from './constants';
 
-export const ENVELOPE_FILENAME = 'envelope.yml';
-export const SUPPORTED_VERSIONS = '0.x';
-
-export function normalize(config) {
+export default function normalize(config) {
   const { version, develop, release, ports } = config;
 
   // Check version

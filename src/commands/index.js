@@ -5,7 +5,7 @@ import start from './start';
 import { readFileSync } from 'fs';
 import { safeLoad } from 'js-yaml';
 import { version } from '../../package.json';
-import { ENVELOPE_FILENAME, normalize } from '../validation';
+import { ENVELOPE_FILENAME, normalize } from '../format';
 
 export const COMMANDS = { start, develop, release, build };
 export const USAGE = [
