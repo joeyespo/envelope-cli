@@ -58,11 +58,18 @@ export default function develop(argv = process.argv, env = process.env) {
 
   // Run processes
   if (server && (!subcommand || subcommand === 'server')) {
-    processes.push(call([server, ...argv].join(' '), { name: 'server', env: childEnv, emitter, multiplex: 'pipe' }));
+    processes.push(call([server, ...argv].join(' '), { name: 'server', env: childEnv, emitter }).closed);
   }
   if (client && (!subcommand || subcommand === 'client')) {
-    processes.push(call([client, ...argv].join(' '), { name: 'client', env: childEnv, emitter, multiplex: 'pipe' }));
+    processes.push(call([client, ...argv].join(' '), { name: 'client', env: childEnv, emitter }).closed);
   }
+
+  // TODO: error if 'start server' and no server
+  // TODO: error if no server, client, or proxy?
+  // TODO: error if server or client are missing? (require empty to explicitly opt out)
+  // TODO: wait on server to start before starting client? (option to change this order?)
+  //       -> to prevent multiplexing issues -- worth it?
+  //       -> or hide the output until server starts? -- will this work?
 
   // TODO: Start reverse proxy
 
