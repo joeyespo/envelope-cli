@@ -5,6 +5,8 @@ import develop from './develop';
 import release from './release';
 import start from './start';
 
+// TODO: .envelope.yml file for local non-git-committed config overrides (like --color and --mux)
+
 export const USAGE = `
 Usage: envelope <command> [<args>...]
 
@@ -23,17 +25,26 @@ Run \`envelope help COMMAND\` for more information on a specific command.
 
 export const COMMANDS = { start, develop, release, build };
 
+function help(command) {
+  if (!command) {
+    console.log(USAGE);
+    return 0;
+  } else if (command === 'help') {
+    console.log('Usage: envelope help <command>\n\n  Show extended help about a command.');
+    return 0;
+  } else if (Object.keys(COMMANDS).includes(command)) {
+    return COMMANDS[command](['--help']);
+  } else {
+    throw new Error(`Command "${command}" not found`);
+  }
+}
+
 function cli(argv = process.argv, env = process.env) {
   const { '<command>': command, '<args>': args } = docopt(USAGE, { argv: argv.slice(2), version });
 
   // Show command help
   if (command === 'help') {
-    const topic = args[0];
-    if (Object.keys(COMMANDS).includes(topic)) {
-      return COMMANDS[topic]([...args.slice(1), '--help']);
-    }
-    console.log(USAGE);
-    return 0;
+    return help(args[0]);
   }
 
   // Validate command

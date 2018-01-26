@@ -15,14 +15,12 @@ export default function release(argv = process.argv, env = process.env) {
   docopt(USAGE, { argv: ['release', ...argv], version });
 
   const { release } = loadConfig();
-
   if (!release) {
     throw new Error(`Missing "release" field in ${ENVELOPE_FILENAME}`);
   }
 
-  const subenv = {
-    ENVELOPE_ENV: 'production'
-  };
+  // Extend the environment
+  const childEnv = { ...env, ENVELOPE_ENV: 'production' };
 
   // Defer running and proxying to the server when off
   if (release.proxy === false) {
@@ -33,8 +31,7 @@ export default function release(argv = process.argv, env = process.env) {
     // TODO: exec/execFile on non-Windows systems
     // https://nodejs.org/api/child_process.html#child_process_spawning_bat_and_cmd_files_on_windows
     const command = [serve, ...argv].join(' ');
-    console.log('serve:', command);
-    return callSync(command, { ...env, ...subenv });
+    return callSync(command, { name: 'serve', env: childEnv });
   }
 
   // TODO: Implement release proxy
