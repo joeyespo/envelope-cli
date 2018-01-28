@@ -58,10 +58,10 @@ export default function develop(argv = process.argv, env = process.env) {
 
   // Run processes
   if (server && (!subcommand || subcommand === 'server')) {
-    processes.push(call([server, ...argv].join(' '), { name: 'server', env: childEnv, emitter }).closed);
+    processes.push(call([...server.split(' '), ...argv], { name: 'server', env: childEnv, emitter }));
   }
   if (client && (!subcommand || subcommand === 'client')) {
-    processes.push(call([client, ...argv].join(' '), { name: 'client', env: childEnv, emitter }).closed);
+    processes.push(call([...client.split(' '), ...argv], { name: 'client', env: childEnv, emitter }));
   }
 
   // TODO: error if 'start server' and no server

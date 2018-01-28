@@ -1,6 +1,6 @@
 import { createInterface } from 'readline';
 import { spawnSync } from 'child_process';
-import spawn from 'better-spawn';
+import execa from 'execa';
 import terminate from 'terminate';
 
 // TODO: Don't use this after all
@@ -12,13 +12,13 @@ export function onInterrupt(cb) {
   listener.on('SIGINT', () => cb('SIGINT'));
 }
 
-export function call(command, { name = null, env = process.env, emitter = null, multiplex = 'raw' }) {
+export function call(argv, { name = null, env = process.env, emitter = null }) {
   if (name) {
-    console.log(`${name}: ${command}`);
+    console.log(`${name}: ${argv.join(' ')}`);
   }
 
-  const p = spawn(command, { env, stdio: ['ignore', 'inherit', 'inherit'] });
-  p.on('error', err => console.error(name, err));
+  const [command, ...args] = argv;
+  const p = execa(command, args, { env, extendEnv: false, reject: false, stdio: ['ignore', 'inherit', 'inherit'] });
 
   if (emitter) {
     let shutdownHandled = false;
@@ -33,7 +33,6 @@ export function call(command, { name = null, env = process.env, emitter = null, 
     });
     emitter.on('shutdown', () => {
       shutdownHandled = true;
-      // TODO: p.close();
       terminate(p.pid);
     });
   }
