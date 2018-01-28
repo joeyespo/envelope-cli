@@ -1,7 +1,7 @@
 import { docopt } from 'docopt';
 import { EventEmitter } from 'events';
 import { version } from '../../package.json';
-import { call, callSync, onInterrupt } from '../utils';
+import { call, callSync, onInterrupt } from '../process';
 import { ENVELOPE_FILENAME, loadConfig } from '../format';
 
 // TODO: Add more documentation to USAGE

@@ -1,6 +1,6 @@
 import { docopt } from 'docopt';
 import { version } from '../../package.json';
-import { callSync } from '../utils';
+import { callSync } from '../process';
 import { ENVELOPE_FILENAME, loadConfig } from '../format';
 
 // TODO: Add more documentation to USAGE
