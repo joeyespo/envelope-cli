@@ -5,18 +5,32 @@ import execa from 'execa';
 import terminate from 'terminate';
 
 class PrefixedWritable extends Writable {
-  constructor(prefix, innerStream, ...args) {
+  constructor(prefix, innerStream, lineState, ...args) {
     super(...args)
     this.prefix = prefix;
     this.innerStream = innerStream || process.stdout;
+    this.lineState = lineState || {};
+    this.lineState.beginWithNewline = this.lineState.beginWithNewline || false;
   }
 
   write(chunk, encoding, callback) {
     const prefix = `${this.prefix}  | `;
     const lines = chunk.toString().replace('\r\n', '\n').split('\n');
     const last = lines[lines.length - 1] === '' ? lines.pop() : [];
-    const prefixed = lines.map(s => [prefix, s].join('')).concat(last).join('\n');
-    this.innerStream.write(prefixed, encoding);
+    const prefixed = lines.map(s => [prefix, s].join('')).concat(last);
+
+    // Force newline
+    if (this.lineState.beginWithNewline) {
+      prefixed.unshift('');
+    }
+
+    // Write prefixed lines
+    const output = prefixed.join('\n');
+    this.innerStream.write(output, encoding);
+
+    // Track whether output ended with a newline
+    this.lineState.beginWithNewline = output[output.length - 1] !== '\n';
+
     if (callback) {
       callback();
     }
@@ -56,8 +70,10 @@ export function call(argv, { name = null, env = process.env, emitter = null, int
   const [command, ...args] = argv;
   const stdio = interactive ? ['inherit', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe'];
   const p = execa(command, args, { env, extendEnv: false, reject: false, stdio });
-  p.stdout.pipe(new PrefixedWritable(name, process.stdout));
-  p.stderr.pipe(new PrefixedWritable(name, process.stderr));
+
+  const lineState = {};
+  p.stdout.pipe(new PrefixedWritable(name, process.stdout, lineState));
+  p.stderr.pipe(new PrefixedWritable(name, process.stderr, lineState));
 
   if (emitter) {
     let shutdownHandled = false;
