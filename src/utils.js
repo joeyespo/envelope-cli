@@ -23,11 +23,27 @@ class PrefixedWritable extends Writable {
   }
 }
 
-// TODO: Don't use this after all
+class MutedWritable extends Writable {
+  constructor(innerStream, ...args) {
+    super(...args);
+    this.innerStream = innerStream || process.stdout;
+    this.isTTY = this.innerStream.isTTY;
+    this.muted = true;
+  }
+
+  write(chunk, encoding, callback) {
+    if (!this.muted) {
+      this.innerStream.write(chunk, encoding, callback);
+    } else if (callback) {
+      callback();
+    }
+  }
+}
+
 export function onInterrupt(cb) {
   // Special handling for graceful exit on Windows
   const listener = process.platform === 'win32'
-    ? createInterface({ input: process.stdin, output: process.stdout })
+    ? createInterface({ input: process.stdin, output: new MutedWritable() })
     : process;
   listener.on('SIGINT', () => cb('SIGINT'));
 }
