@@ -3,6 +3,14 @@ import { spawnSync } from 'child_process';
 import execa from 'execa';
 import terminate from 'terminate';
 
+function output(stream, name, text) {
+  if (!name) {
+    stream(text);
+    return;
+  }
+  stream(`${name}  | ${text}`);
+}
+
 // TODO: Don't use this after all
 export function onInterrupt(cb) {
   // Special handling for graceful exit on Windows
@@ -18,7 +26,9 @@ export function call(argv, { name = null, env = process.env, emitter = null }) {
   }
 
   const [command, ...args] = argv;
-  const p = execa(command, args, { env, extendEnv: false, reject: false, stdio: ['ignore', 'inherit', 'inherit'] });
+  const p = execa(command, args, { env, extendEnv: false, reject: false });
+  p.stdout.pipe(process.stdout);
+  p.stderr.pipe(process.stderr);
 
   if (emitter) {
     let shutdownHandled = false;
