@@ -24,7 +24,7 @@ Subcommands:
 const SUBCOMMANDS = ['server', 'client', 'proxy'];
 
 export default function develop(argv = process.argv, env = process.env) {
-  const { '<subcommand>': subcommand } = docopt(USAGE, { argv: ['develop', ...argv], version });
+  const { '<subcommand>': subcommand, '<args>': args } = docopt(USAGE, { argv: ['develop', ...argv], version });
   if (subcommand && !SUBCOMMANDS.includes(subcommand)) {
     // TODO: Better error?
     throw new Error(`Subcommand "${subcommand}" not found`);
@@ -44,7 +44,7 @@ export default function develop(argv = process.argv, env = process.env) {
     if (!server) {
       throw new Error('The "server" field in "develop" is required when proxy is off');
     }
-    return callSync([server, ...argv].join(' '), { name: 'server', env: childEnv });
+    return callSync([server, ...args].join(' '), { name: 'server', env: childEnv });
   }
 
   // Events
@@ -58,10 +58,10 @@ export default function develop(argv = process.argv, env = process.env) {
 
   // Run processes
   if (server && (!subcommand || subcommand === 'server')) {
-    processes.push(call([...server.split(' '), ...argv], { name: 'server', env: childEnv, emitter }));
+    processes.push(call([...server.split(' '), ...args], { name: 'server', env: childEnv, emitter }));
   }
   if (client && (!subcommand || subcommand === 'client')) {
-    processes.push(call([...client.split(' '), ...argv], { name: 'client', env: childEnv, emitter }));
+    processes.push(call([...client.split(' '), ...args], { name: 'client', env: childEnv, emitter }));
   }
 
   // TODO: error if 'start server' and no server
