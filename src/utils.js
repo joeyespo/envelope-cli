@@ -1,14 +1,26 @@
 import { createInterface } from 'readline';
+import { Writable } from 'stream';
 import { spawnSync } from 'child_process';
 import execa from 'execa';
 import terminate from 'terminate';
 
-function output(stream, name, text) {
-  if (!name) {
-    stream(text);
-    return;
+class PrefixedWritable extends Writable {
+  constructor(prefix, innerStream, ...args) {
+    super(...args)
+    this.prefix = prefix;
+    this.innerStream = innerStream || process.stdout;
   }
-  stream(`${name}  | ${text}`);
+
+  write(chunk, encoding, callback) {
+    const prefix = `${this.prefix}  | `;
+    const lines = chunk.toString().replace('\r\n', '\n').split('\n');
+    const last = lines[lines.length - 1] === '' ? lines.pop() : [];
+    const prefixed = lines.map(s => [prefix, s].join('')).concat(last).join('\n');
+    this.innerStream.write(prefixed, encoding);
+    if (callback) {
+      callback();
+    }
+  }
 }
 
 // TODO: Don't use this after all
@@ -27,8 +39,8 @@ export function call(argv, { name = null, env = process.env, emitter = null }) {
 
   const [command, ...args] = argv;
   const p = execa(command, args, { env, extendEnv: false, reject: false });
-  p.stdout.pipe(process.stdout);
-  p.stderr.pipe(process.stderr);
+  p.stdout.pipe(new PrefixedWritable(name, process.stdout));
+  p.stderr.pipe(new PrefixedWritable(name, process.stderr));
 
   if (emitter) {
     let shutdownHandled = false;
