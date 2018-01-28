@@ -15,15 +15,16 @@ Options:
   -v, --version   Show version number
 
 Commands:
-  start           Runs either 'develop' or 'release' depending on NODE_ENV
-  develop         Runs the client and server commands and exposes them behind a reverse proxy
-  release         Builds the client, runs the serve command, and exposs them behind a production server
-  build           Builds the client (without running any servers)
+  s, start           Runs either 'develop' or 'release' depending on NODE_ENV
+  d, develop         Runs the client and server commands and exposes them behind a reverse proxy
+  r, release         Builds the client, runs the serve command, and exposs them behind a production server
+  b, build           Builds the client (without running any servers)
 
 Run \`envelope help COMMAND\` for more information on a specific command.
 `.trim();
 
 export const COMMANDS = { start, develop, release, build };
+export const ALIASES = { s: 'start', d: 'develop', r: 'release', b: 'build' };
 
 function help(command) {
   if (!command) {
@@ -40,7 +41,8 @@ function help(command) {
 }
 
 function cli(argv = process.argv, env = process.env) {
-  const { '<command>': command, '<args>': args } = docopt(USAGE, { argv: argv.slice(2), version });
+  const { '<command>': rawCommand, '<args>': args } = docopt(USAGE, { argv: argv.slice(2), version });
+  const command = ALIASES[rawCommand] || rawCommand;
 
   // Show command help
   if (command === 'help') {
