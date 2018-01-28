@@ -16,9 +16,9 @@ Usage: envelope [options] develop [<subcommand>] [<args>...]
   Runs the client and server commands and exposes them behind a reverse proxy.
 
 Subcommands:
-  server          Runs the server withouth the client or proxy
-  client          Runs the client withouth the server or proxy
-  proxy           Runs the proxy without the client or server
+  server            Runs the server withouth the client or proxy
+  client            Runs the client withouth the server or proxy
+  proxy             Runs the proxy without the client or server
 `.trim();
 
 const SUBCOMMANDS = ['server', 'client', 'proxy'];

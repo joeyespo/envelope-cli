@@ -11,14 +11,14 @@ export const USAGE = `
 Usage: envelope [options] <command> [<args>...]
 
 Options:
-  -h, --help      Show usage information
-  -v, --version   Show version number
+  -h, --help        Show usage information
+  -v, --version     Show version number
 
 Commands:
-  s, start           Runs either 'develop' or 'release' depending on NODE_ENV
-  d, develop         Runs the client and server commands and exposes them behind a reverse proxy
-  r, release         Builds the client, runs the serve command, and exposs them behind a production server
-  b, build           Builds the client (without running any servers)
+  s, start          Runs either 'develop' or 'release' depending on NODE_ENV
+  d, develop        Runs the client and server commands and exposes them behind a reverse proxy
+  r, release        Builds the client, runs the serve command, and exposs them behind a production server
+  b, build          Builds the client (without running any servers)
 
 Run \`envelope help COMMAND\` for more information on a specific command.
 `.trim();
