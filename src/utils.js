@@ -48,13 +48,14 @@ export function onInterrupt(cb) {
   listener.on('SIGINT', () => cb('SIGINT'));
 }
 
-export function call(argv, { name = null, env = process.env, emitter = null }) {
+export function call(argv, { name = null, env = process.env, emitter = null, interactive = false }) {
   if (name) {
     console.log(`${name}: ${argv.join(' ')}`);
   }
 
   const [command, ...args] = argv;
-  const p = execa(command, args, { env, extendEnv: false, reject: false });
+  const stdio = interactive ? ['inherit', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe'];
+  const p = execa(command, args, { env, extendEnv: false, reject: false, stdio });
   p.stdout.pipe(new PrefixedWritable(name, process.stdout));
   p.stderr.pipe(new PrefixedWritable(name, process.stderr));
 

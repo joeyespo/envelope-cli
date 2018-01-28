@@ -13,6 +13,7 @@ Usage: envelope [options] <command> [<args>...]
 Options:
   -h, --help        Show usage information
   -v, --version     Show version number
+  -i <subcommand>   Used by start, develop, and release
 
 Commands:
   s, start          Runs either 'develop' or 'release' depending on NODE_ENV
@@ -41,7 +42,11 @@ function help(command) {
 }
 
 function cli(argv = process.argv, env = process.env) {
-  const { '<command>': rawCommand, '<args>': args } = docopt(USAGE, { argv: argv.slice(2), version });
+  const {
+    '<command>': rawCommand,
+    '<args>': args,
+    '-i': interactive
+  } = docopt(USAGE, { argv: argv.slice(2), version });
   const command = ALIASES[rawCommand] || rawCommand;
 
   // Show command help
@@ -56,9 +61,16 @@ function cli(argv = process.argv, env = process.env) {
 
   // TODO: Load .env file
 
+  // Forward options
+  const options = [];
+  if (interactive) {
+    options.push('-i');
+    options.push(interactive);
+  }
+
   // Run command
   console.log(`envelope ${command} v${version}`);
-  return COMMANDS[command](args, env);
+  return COMMANDS[command](options.concat(args), env);
 }
 
 export function main(argv = process.argv, env = process.env) {

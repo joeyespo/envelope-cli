@@ -12,6 +12,9 @@ Usage: envelope [options] start [<args>...]
   assumed to be the environment and 'develop' is run.
 
   All argumuents will be forwarded to the respective command.
+
+Options:
+  -i <subcommand>   Runs the specified subcommand with stdin
 `.trim();
 
 export default function start(argv = process.argv.slice(2), env = process.env) {
