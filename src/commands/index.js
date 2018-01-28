@@ -8,7 +8,7 @@ import start from './start';
 // TODO: .envelope.yml file for local non-git-committed config overrides (like --color and --mux)
 
 export const USAGE = `
-Usage: envelope <command> [<args>...]
+Usage: envelope [options] <command> [<args>...]
 
 Options:
   -h, --help      Show usage information

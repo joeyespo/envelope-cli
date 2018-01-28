@@ -4,7 +4,7 @@ import develop from './develop';
 import release from './release';
 
 export const USAGE = `
-Usage: envelope start [<args>...]
+Usage: envelope [options] start [<args>...]
 
   Runs either 'develop' or 'release' depending on NODE_ENV.
 

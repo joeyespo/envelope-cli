@@ -11,7 +11,7 @@ import { ENVELOPE_FILENAME, loadConfig } from '../format';
 // TODO: -i <subcommand> to change interactive/stdin behavior (both, server, client, none)
 
 export const USAGE = `
-Usage: envelope develop [options] [<subcommand>]
+Usage: envelope [options] develop [<subcommand>] [<args>...]
 
   Runs the client and server commands and exposes them behind a reverse proxy.
 
