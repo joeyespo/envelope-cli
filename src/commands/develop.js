@@ -63,7 +63,12 @@ export default function develop(argv = process.argv, env = process.env) {
 
   // Events
   const emitter = new EventEmitter();
-  emitter.once('shutdown', signal => console.log(`Shutting down...`));
+  const shutdown = new Promise((resolve) => {
+    emitter.once('shutdown', () => {
+      console.log(`Shutting down...`);
+      resolve();
+    });
+  });
   emitter.on('keyboard-interrupt', signal => emitter.emit('shutdown', signal));
   if (!interactive || interactive === 'none') {
     onInterrupt(signal => emitter.emit('keyboard-interrupt', signal));
@@ -77,7 +82,8 @@ export default function develop(argv = process.argv, env = process.env) {
     processes.push(call([...server.split(' '), ...args], {
       name: 'server',
       env: childEnv,
-      emitter,
+      shutdownPromise: shutdown,
+      shutdownEmitter: emitter,
       interactive: interactive === 'server' || interactive === 'both'
     }));
   }
@@ -85,7 +91,8 @@ export default function develop(argv = process.argv, env = process.env) {
     processes.push(call([...client.split(' '), ...args], {
       name: 'client',
       env: childEnv,
-      emitter,
+      shutdownPromise: shutdown,
+      shutdownEmitter: emitter,
       interactive: interactive === 'client' || interactive === 'both'
     }));
   }

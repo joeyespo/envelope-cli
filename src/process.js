@@ -12,7 +12,7 @@ export function onInterrupt(cb) {
   listener.on('SIGINT', () => cb('SIGINT'));
 }
 
-export function call(argv, { name = null, env = process.env, emitter = null, interactive = false }) {
+export function call(argv, { name = null, env = process.env, shutdownEmitter = null, shutdownPromise = null, interactive = false }) {
   if (name) {
     console.log(`${name}: ${argv.join(' ')}`);
   }
@@ -25,20 +25,40 @@ export function call(argv, { name = null, env = process.env, emitter = null, int
   p.stdout.pipe(new PrefixedWritable(name, process.stdout, lineState));
   p.stderr.pipe(new PrefixedWritable(name, process.stderr, lineState));
 
-  if (emitter) {
-    let shutdownHandled = false;
-    p.once('exit', (code, signal) => {
-      if (shutdownHandled) {
-        return;
-      }
+  let shutdownReceived = false;
+  let exited = false;
+  p.then(({ code, signal }) => {
+    exited = true;
+    if (!shutdownReceived) {
       if (name && code !== null) {
         console.log(`${name} ${code === 0 ? 'exited' : 'failed'} with code ${code}`);
       }
-      emitter.emit('shutdown', signal);
-    });
-    emitter.on('shutdown', () => {
-      shutdownHandled = true;
-      terminate(p.pid);
+      if (shutdownEmitter) {
+        shutdownEmitter.emit('shutdown', signal);
+      }
+    }
+  });
+  if (shutdownPromise) {
+    shutdownPromise.then(() => {
+      shutdownReceived = true;
+      function waitAndTerminate(pid) {
+        terminate(pid, err => {
+          // Parent process and its subprocesses exited
+          if (exited) {
+            return;
+          }
+          // Wait and try again if process or one of its child processes hasn't finished starting yet
+          if (!err || err.errno === 'ESRCH') {
+            setTimeout(() => waitAndTerminate(pid), 200);
+            return;
+          }
+          // Show error if unfinished parent process could not be found
+          const message = env.DEBUG_ENVELOPE ? err : String(err);
+          console.error(`Could not terminate '${name}' (PID ${pid}): ${message}`)
+          process.exit(1);
+        });
+      }
+      waitAndTerminate(p.pid);
     });
   }
 
