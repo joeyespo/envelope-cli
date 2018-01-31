@@ -1,6 +1,7 @@
 import { docopt } from 'docopt';
 import { EventEmitter } from 'events';
 import { version } from '../../package.json';
+import { OneTimeEvent } from '../event';
 import { call, callSync, onInterrupt } from '../process';
 import { ENVELOPE_FILENAME, loadConfig } from '../format';
 
@@ -62,13 +63,10 @@ export default function develop(argv = process.argv, env = process.env) {
   }
 
   // Events
+  const shutdownEvent = new OneTimeEvent();
+  shutdownEvent.then(() => console.log(`Shutting down...`));
   const emitter = new EventEmitter();
-  const shutdown = new Promise((resolve) => {
-    emitter.once('shutdown', () => {
-      console.log(`Shutting down...`);
-      resolve();
-    });
-  });
+  emitter.once('shutdown', () => shutdownEvent.signal());
   emitter.on('keyboard-interrupt', signal => emitter.emit('shutdown', signal));
   if (!interactive || interactive === 'none') {
     onInterrupt(signal => emitter.emit('keyboard-interrupt', signal));
@@ -82,8 +80,7 @@ export default function develop(argv = process.argv, env = process.env) {
     processes.push(call([...server.split(' '), ...args], {
       name: 'server',
       env: childEnv,
-      shutdownPromise: shutdown,
-      shutdownEmitter: emitter,
+      shutdownEvent,
       interactive: interactive === 'server' || interactive === 'both'
     }));
   }
@@ -91,8 +88,7 @@ export default function develop(argv = process.argv, env = process.env) {
     processes.push(call([...client.split(' '), ...args], {
       name: 'client',
       env: childEnv,
-      shutdownPromise: shutdown,
-      shutdownEmitter: emitter,
+      shutdownEvent,
       interactive: interactive === 'client' || interactive === 'both'
     }));
   }

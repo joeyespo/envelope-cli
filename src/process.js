@@ -12,7 +12,7 @@ export function onInterrupt(cb) {
   listener.on('SIGINT', () => cb('SIGINT'));
 }
 
-export function call(argv, { name = null, env = process.env, shutdownEmitter = null, shutdownPromise = null, interactive = false }) {
+export function call(argv, { name = null, env = process.env, shutdownEvent = null, interactive = false }) {
   if (name) {
     console.log(`${name}: ${argv.join(' ')}`);
   }
@@ -33,13 +33,13 @@ export function call(argv, { name = null, env = process.env, shutdownEmitter = n
       if (name && code !== null) {
         console.log(`${name} ${code === 0 ? 'exited' : 'failed'} with code ${code}`);
       }
-      if (shutdownEmitter) {
-        shutdownEmitter.emit('shutdown', signal);
+      if (shutdownEvent) {
+        shutdownEvent.signal();
       }
     }
   });
-  if (shutdownPromise) {
-    shutdownPromise.then(() => {
+  if (shutdownEvent) {
+    shutdownEvent.then(() => {
       shutdownReceived = true;
       function waitAndTerminate(pid) {
         terminate(pid, err => {
