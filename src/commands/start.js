@@ -15,6 +15,8 @@ Usage: envelope [options] start [<args>...]
 
 Options:
   -i <subcommand>   Runs the specified subcommand with stdin
+  --host <hostname> Runs the proxy on the specified host
+  -p, --port <int>  Runs the proxy on the specified port
 `.trim();
 
 export default function start(argv = process.argv.slice(2), env = process.env) {

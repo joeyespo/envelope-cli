@@ -12,18 +12,31 @@ export function onInterrupt(cb) {
   listener.on('SIGINT', () => cb('SIGINT'));
 }
 
-export function call(argv, { name = null, env = process.env, shutdownEvent = null, interactive = false }) {
+
+export function expandvars(s, env = process.env) {
+  // TODO: More advanced expandvars
+  return s && s.match(/^\$(_|[A-Z])+$/) ? (env[s.slice(1)] || s) : s;
+}
+
+export function call(argv, { name = null, env = process.env, output = null, shutdownEvent = null, interactive = false }) {
+  const expanded = argv.map(a => expandvars(a, env));
+
   if (name) {
-    console.log(`${name}: ${argv.join(' ')}`);
+    console.log(`${name}${interactive ? ' (interactive)' : ''}: ${expanded.join(' ')}`);
   }
 
-  const [command, ...args] = argv;
-  const stdio = interactive ? ['inherit', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe'];
-  const p = execa(command, args, { env, extendEnv: false, reject: false, stdio });
+  const [command, ...args] = expanded;
+  // TODO: Still use pipe on interactive?
+  const stdio = interactive ? ['inherit', 'inherit', 'inherit'] : ['ignore', 'pipe', 'pipe'];
+  const p = execa(command, args, { env, extendEnv: false, reject: false, stdio, shell: true });
 
-  const lineState = {};
-  p.stdout.pipe(new PrefixedWritable(name, process.stdout, lineState));
-  p.stderr.pipe(new PrefixedWritable(name, process.stderr, lineState));
+  // TODO: Allow being fully interactive with a prefix?
+  if (!interactive) {
+    // TODO: Extract multiplexing and accept stderr
+    const prefixed = name ? new PrefixedWritable(name, output || process.stdout) : (output || process.stdout);
+    p.stdout.pipe(prefixed);
+    p.stderr.pipe(prefixed);
+  }
 
   let shutdownReceived = false;
   let exited = false;

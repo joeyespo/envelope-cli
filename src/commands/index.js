@@ -14,6 +14,8 @@ Options:
   -h, --help        Show usage information
   -v, --version     Show version number
   -i <subcommand>   Used by start, develop, and release
+  --host <hostname> Runs the proxy on the specified host
+  -p, --port <int>  Runs the proxy on the specified port
 
 Commands:
   s, start          Runs either 'develop' or 'release' depending on NODE_ENV
@@ -45,7 +47,9 @@ function cli(argv = process.argv, env = process.env) {
   const {
     '<command>': rawCommand,
     '<args>': args,
-    '-i': interactive
+    '-i': interactive,
+    '--host': host,
+    '--port': port,
   } = docopt(USAGE, { argv: argv.slice(2), version });
   const command = ALIASES[rawCommand] || rawCommand;
 
@@ -66,6 +70,14 @@ function cli(argv = process.argv, env = process.env) {
   if (interactive) {
     options.push('-i');
     options.push(interactive);
+  }
+  if (host) {
+    options.push('--host');
+    options.push(host);
+  }
+  if (port) {
+    options.push('--port');
+    options.push(port);
   }
 
   // Run command

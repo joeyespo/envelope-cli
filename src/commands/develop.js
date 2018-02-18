@@ -1,9 +1,13 @@
 import { docopt } from 'docopt';
 import { EventEmitter } from 'events';
+import { createProxyServer } from 'http-proxy';
+import { createServer } from 'http';
 import { version } from '../../package.json';
 import { OneTimeEvent } from '../event';
-import { call, callSync, onInterrupt } from '../process';
 import { ENVELOPE_FILENAME, loadConfig } from '../format';
+import { call, callSync, onInterrupt } from '../process';
+import { PrefixedWritable } from '../stream';
+import connect from 'connect';
 
 // TODO: Add more documentation to USAGE
 // TODO: -c, --config for specifying a different envelope.yml file
@@ -18,6 +22,8 @@ Usage: envelope [options] develop [<subcommand>] [<args>...]
 Options:
   -i <subcommand>   Runs the specified subcommand with stdin
                     On by default if <subcommand> is specified (set to 'none' to disable)
+  --host <hostname> Runs the proxy on the specified host
+  -p, --port <int>  Runs the proxy on the specified port
 
 Subcommands:
   server            Runs the server withouth the client or proxy
@@ -31,9 +37,11 @@ export default function develop(argv = process.argv, env = process.env) {
   const {
     '<subcommand>': subcommand,
     '<args>': args,
-    '-i': rawInteractive
+    '-i': rawInteractive,
+    '--host': host,
+    '--port': port,
   } = docopt(USAGE, { argv: ['develop', ...argv], version });
-  const interactive = rawInteractive || subcommand;
+  const interactive = rawInteractive || (subcommand !== 'proxy' ? subcommand : null);
 
   // Validation
   if (subcommand && !SUBCOMMANDS.includes(subcommand)) {
@@ -72,22 +80,75 @@ export default function develop(argv = process.argv, env = process.env) {
     onInterrupt(signal => emitter.emit('keyboard-interrupt', signal));
   }
 
-  const { client, server } = develop;
-  const processes = [];
+  // TODO: Separate concerns?
+  const output = new PrefixedWritable('', process.stdout);
+  const address = [
+    host || env.ENVELOPE_HOST || env.HOST || 'localhost',   // TODO: Get from local config
+    port || env.ENVELOPE_PORT || env.PORT || 8000,          // TODO: Get from local config
+  ];
+
+  // TODO: Use --port when using subcommand?
+  const basePort = address[1] > 1024 ? address[1] : 8000;
+  const serverPort = basePort + 1;  // TODO: Get from local config (and from envelope.yml too?)
+  const clientPort = basePort + 2;  // TODO: Get from local config (and from envelope.yml too?)
+
+  // Run reverse proxy
+  if (!subcommand || subcommand === 'proxy') {
+    // TODO: Chalk around this address to make it stand out
+    // TODO: Rename 'proxy' to 'router' everywhere?
+    console.log(`router: Running on http://${address.join(':')}/ (Press CTRL+C to quit)`);
+    const app = connect();
+    const proxy = createProxyServer();
+    // TODO: Allow overriding clientPort when subcommand is 'proxy'?
+    const proxyOutput = new PrefixedWritable('proxy ', output);
+    const serverTarget = `http://localhost:${serverPort}`;
+    const clientTarget = `http://localhost:${clientPort}`;
+    // TODO: Customize server route through envelope.yml? Or .env? Or require /api?
+    // TODO: Log visits like [router] -- or allow envelope.yml or local config to silence (if redundant, e.g. DEBUG mode)
+    // TODO: /__/ routes
+    // Route /api to server
+    app.use('/api', (req, res, next) => {
+      proxy.web(req, res, { target: serverTarget }, err => {
+        // TODO: Wait on client and try again (if not proxy-only)
+        proxyOutput.write(`${err}\n`);
+        // TODO: Better error message
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end(String(err));
+      });
+      proxy.on('upgrade', (req, socket, head) => proxy.ws(req, socket, head));
+    });
+    // Route all other requests to the client
+    app.use((req, res) => {
+      proxy.web(req, res, { target: clientTarget }, err => {
+        // TODO: Wait on client and try again (if not proxy-only)
+        proxyOutput.write(`${err}\n`);
+        // TODO: Better error message
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end(String(err));
+      });
+      proxy.on('upgrade', (req, socket, head) => proxy.ws(req, socket, head));
+    });
+    // Run proxy server
+    createServer(app).listen(address[1], address[0]);
+  }
 
   // Run processes
+  const { client, server } = develop;
+  const promises = [shutdownEvent];
   if (server && (!subcommand || subcommand === 'server')) {
-    processes.push(call([...server.split(' '), ...args], {
+    promises.push(call([...server.split(' '), ...args], {
       name: 'server',
-      env: childEnv,
+      env: { ...childEnv, HOST: 'localhost', PORT: serverPort },  // TODO: Allow overriding using ENV?
+      output,
       shutdownEvent,
       interactive: interactive === 'server' || interactive === 'both'
     }));
   }
   if (client && (!subcommand || subcommand === 'client')) {
-    processes.push(call([...client.split(' '), ...args], {
+    promises.push(call([...client.split(' '), ...args], {
       name: 'client',
-      env: childEnv,
+      env: { ...childEnv, HOST: 'localhost', PORT: clientPort },  // TODO: Allow overriding using ENV?
+      output,
       shutdownEvent,
       interactive: interactive === 'client' || interactive === 'both'
     }));
@@ -106,7 +167,7 @@ export default function develop(argv = process.argv, env = process.env) {
   // TODO: Wait on clientProcess exit? Return promise?
 
   // Exit cleanly after all subprocess exit
-  return Promise.all(processes).then(() => {
+  return Promise.all(promises).then(() => {
     process.exit(0);
   });
 }

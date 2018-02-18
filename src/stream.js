@@ -5,12 +5,13 @@ export class PrefixedWritable extends Writable {
     super(...args)
     this.prefix = prefix;
     this.innerStream = innerStream || process.stdout;
+    this.isTTY = this.innerStream.isTTY;
     this.lineState = lineState || {};
     this.lineState.beginWithNewline = this.lineState.beginWithNewline || false;
   }
 
   write(chunk, encoding, callback) {
-    const prefix = `${this.prefix}  | `;
+    const prefix = this.prefix ? `${this.prefix}  | ` : '';
     const lines = chunk.toString().replace('\r\n', '\n').split('\n');
     const last = lines[lines.length - 1] === '' ? lines.pop() : [];
     const prefixed = lines.map(s => [prefix, s].join('')).concat(last);
