@@ -8,6 +8,7 @@ import { ENVELOPE_FILENAME, loadConfig } from '../format';
 import { call, callSync, onInterrupt } from '../process';
 import { PrefixedWritable } from '../stream';
 import connect from 'connect';
+import dotenv from 'dotenv';
 
 // TODO: Add more documentation to USAGE
 // TODO: -c, --config for specifying a different envelope.yml file
@@ -42,6 +43,9 @@ export default function develop(argv = process.argv, env = process.env) {
     '--port': port,
   } = docopt(USAGE, { argv: ['develop', ...argv], version });
   const interactive = rawInteractive || (subcommand !== 'proxy' ? subcommand : null);
+
+  // Load .env file
+  dotenv.config();
 
   // Validation
   if (subcommand && !SUBCOMMANDS.includes(subcommand)) {
