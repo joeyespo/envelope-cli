@@ -1,6 +1,6 @@
 import { createInterface } from 'readline';
 import { spawnSync } from 'child_process';
-import { MutedWritable, PrefixedWritable } from './stream';
+import { MutedWritable, PrefixedWritable, StrippedWritable } from './stream';
 import execa from 'execa';
 import terminate from 'terminate';
 
@@ -33,7 +33,8 @@ export function call(argv, { name = null, env = process.env, output = null, shut
   // TODO: Allow being fully interactive with a prefix?
   if (!interactive) {
     // TODO: Extract multiplexing and accept stderr
-    const prefixed = name ? new PrefixedWritable(name, output || process.stdout) : (output || process.stdout);
+    const stripped = new StrippedWritable(output || process.stdout);
+    const prefixed = name ? new PrefixedWritable(name, stripped) : stripped;
     p.stdout.pipe(prefixed);
     p.stderr.pipe(prefixed);
   }
